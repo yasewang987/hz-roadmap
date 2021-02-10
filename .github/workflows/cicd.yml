@@ -1,0 +1,40 @@
+name: hz-roadmap
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag yasewang/roadmap:${{ github.sha }}
+    - name: publish image
+      run: | 
+        docker login -u yasewang -p ${{ secrets.DOCKER_PWD }}
+        docker push yasewang/roadmap:${{ github.sha }}
+  deploy:
+    
+    runs-on: ubuntu-latest
+    
+    needs: build
+    
+    steps:
+    - name: connect remote
+      uses: appleboy/ssh-action@v0.0.6
+      with:
+        host: ${{ secrets.MOR2_HOST }}
+        username: ${{ secrets.MOR2_USERNAME }}
+        password: ${{ secrets.MOR2_PASSWORD }}
+        script: |
+          docker pull yasewang/roadmap:${{ github.sha }}
+          if [ $(docker ps -a | grep roadmap | awk '{print $1}') ]
+          then
+          docker rm -f roadmap
+          fi
+          docker run -d -p 10086:80 --name roadmap yasewang/roadmap:${{ github.sha }}
