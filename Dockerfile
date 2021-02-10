@@ -11,6 +11,5 @@ RUN yarn && yarn build && ls
 FROM base as final
 WORKDIR /app
 COPY --from=build /app/roadmap.conf /etc/nginx/conf.d
-COPY --from=build /app/cert /etc/nginx/conf.d
 COPY --from=build /app/dist /usr/share/nginx/html
 CMD [ "nginx", "-g", "daemon off;" ]
